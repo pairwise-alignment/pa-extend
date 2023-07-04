@@ -1,0 +1,28 @@
+* Benchmarks for ~extend~
+
+This repo contains some implementations and benchmarks to find out what is the
+fastest implementation of the ~extend~ function commonly used in e.g. WFA, that
+takes two strings and finds the length of the longest common prefix.
+
+See [[src/lib.rs]] for the code.
+
+[[file:plots/bench.png]]
+
+On the horizontal axis is the error rate of the two strings. Lower error rate
+means longer length of the LCP, and hence more iterations/time to find this
+length.
+
+Processing characters one by one (~zip_safe~ and ~scalar~) is slower than
+processing 8 at a time (~u64_{xor,eq}~), and processing 32 at a time using
+SIMD (~s256_{xor,or}~) is even faster.
+
+Interestingly, the most naive SIMD implementation that is fastest for long LCPs
+turns out to be slowest when the two sequences are completely independent
+(~error rate = 1.0~). I am not quite sure why it slows dows as the error rate
+goes up.
+
+*Unsafe:* All the methods apart from ~zip~ are /unsafe/, meaning that they don't
+ do any bounds checking, and expect to run into two distinct characters before
+ the end of either of the strings is reached. In practice, you can achieve this
+ by e.g. appending 32 ~$~ characters to one string and 32 ~#~ characters to
+ the other.
