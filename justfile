@@ -8,7 +8,7 @@ json:
       }]' > results/bench.json
 
 build:
-    cargo build -r --bench nw
+    cargo build -r --bench bench
 
 bench bench='' *args='':
     cargo bench --bench bench -- --quiet -n "{{bench}}" {{args}}

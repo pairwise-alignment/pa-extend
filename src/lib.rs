@@ -7,8 +7,7 @@ use std::{
 
 use pa_types::{Seq, I};
 
-pub type ExtendFn2 = fn(Seq, Seq) -> I;
-pub type ExtendFn4 = fn(Seq, Seq, I, I) -> I;
+pub type ExtendFn = fn(Seq, Seq) -> I;
 
 pub fn zip(a: Seq, b: Seq) -> I {
     a.iter().zip(b).take_while(|(ca, cb)| ca == cb).count() as _
@@ -29,7 +28,6 @@ where
     unsafe { Simd::from_array(*(a.as_ptr().offset(cnt as _) as *const [u8; L])) }
 }
 
-#[inline(never)]
 pub fn naive(mut a: Seq, mut b: Seq) -> I {
     let mut cnt = 0;
     while !a.is_empty() && !b.is_empty() && eq(a, b, 0) {
@@ -40,7 +38,6 @@ pub fn naive(mut a: Seq, mut b: Seq) -> I {
     cnt
 }
 
-#[inline(never)]
 pub fn naive_fast(mut a: Seq, mut b: Seq) -> I {
     let mut cnt = 0;
     let len = min(a.len(), b.len());
@@ -52,7 +49,6 @@ pub fn naive_fast(mut a: Seq, mut b: Seq) -> I {
     cnt as I
 }
 
-#[inline(never)]
 pub fn naive_unsafe(mut a: Seq, mut b: Seq) -> I {
     let mut cnt = 0;
     while eq(a, b, 0) {
@@ -63,7 +59,6 @@ pub fn naive_unsafe(mut a: Seq, mut b: Seq) -> I {
     cnt
 }
 
-#[inline(never)]
 pub fn scalar(a: Seq, b: Seq) -> I {
     let mut cnt = 0;
     while cnt < a.len() && cnt < b.len() && eq(a, b, cnt) {
@@ -72,7 +67,6 @@ pub fn scalar(a: Seq, b: Seq) -> I {
     cnt as I
 }
 
-#[inline(never)]
 pub fn scalar_fast(a: Seq, b: Seq) -> I {
     let mut cnt = 0;
     let len = min(a.len(), b.len());
@@ -82,7 +76,6 @@ pub fn scalar_fast(a: Seq, b: Seq) -> I {
     cnt as I
 }
 
-#[inline(never)]
 pub fn scalar_unsafe(a: Seq, b: Seq) -> I {
     let mut cnt = 0;
     while eq(a, b, cnt) {
@@ -91,7 +84,6 @@ pub fn scalar_unsafe(a: Seq, b: Seq) -> I {
     cnt as I
 }
 
-#[inline(never)]
 pub fn u64(a: Seq, b: Seq) -> I {
     let mut cnt = 0;
     while cnt + 8 <= a.len() && cnt + 8 <= b.len() {
@@ -107,7 +99,6 @@ pub fn u64(a: Seq, b: Seq) -> I {
     cnt as I + zip(&a[cnt..], &b[cnt..])
 }
 
-#[inline(never)]
 pub fn u64_unsafe(a: Seq, b: Seq) -> I {
     let mut cnt = 0;
     loop {
@@ -122,7 +113,6 @@ pub fn u64_unsafe(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn u64_unsafe_eq(a: Seq, b: Seq) -> I {
     let mut cnt = 0;
     loop {
@@ -136,7 +126,38 @@ pub fn u64_unsafe_eq(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
+pub fn u64_unsafe_eq_if0(a: Seq, b: Seq) -> I {
+    if a[0] != b[0] {
+        return 0;
+    }
+    let mut cnt = 0;
+    loop {
+        let a = index_u64(a, cnt);
+        let b = index_u64(b, cnt);
+        if a == b {
+            cnt += 8;
+        } else {
+            return cnt as I + ((a ^ b).leading_zeros() / u8::BITS) as I;
+        };
+    }
+}
+
+pub fn u64_unsafe_eq_if1(a: Seq, b: Seq) -> I {
+    if a[0] != b[0] {
+        return 0;
+    }
+    let mut cnt = 1;
+    loop {
+        let a = index_u64(a, cnt);
+        let b = index_u64(b, cnt);
+        if a == b {
+            cnt += 8;
+        } else {
+            return cnt as I + ((a ^ b).leading_zeros() / u8::BITS) as I;
+        };
+    }
+}
+
 pub fn s256_unsafe_eq(a: Seq, b: Seq) -> I {
     const L: usize = 32;
     let mut cnt = 0;
@@ -158,7 +179,6 @@ pub fn s256_unsafe_eq(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn s64_unsafe(a: Seq, b: Seq) -> I {
     const L: usize = 8;
     let mut cnt = 0;
@@ -180,7 +200,6 @@ pub fn s64_unsafe(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn s64_unsafe_nz(a: Seq, b: Seq) -> I {
     const L: usize = 8;
     let mut cnt = 0;
@@ -202,7 +221,6 @@ pub fn s64_unsafe_nz(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn s128_unsafe(a: Seq, b: Seq) -> I {
     const L: usize = 16;
     let mut cnt = 0;
@@ -224,7 +242,6 @@ pub fn s128_unsafe(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn s128_unsafe_nz(a: Seq, b: Seq) -> I {
     const L: usize = 16;
     let mut cnt = 0;
@@ -246,7 +263,6 @@ pub fn s128_unsafe_nz(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn s256_unsafe(a: Seq, b: Seq) -> I {
     const L: usize = 32;
     let mut cnt = 0;
@@ -268,7 +284,6 @@ pub fn s256_unsafe(a: Seq, b: Seq) -> I {
     }
 }
 
-#[inline(never)]
 pub fn s256_unsafe_nz(a: Seq, b: Seq) -> I {
     const L: usize = 32;
     let mut cnt = 0;
@@ -287,5 +302,40 @@ pub fn s256_unsafe_nz(a: Seq, b: Seq) -> I {
         } else {
             cnt += L;
         };
+    }
+}
+
+pub mod parallel {
+    pub type ExtendFnParallel<const K: usize> = fn(Seq, Seq, Simd<I, K>, Simd<I, K>) -> Simd<I, K>;
+    fn index<T: std::simd::SimdElement, const K: usize>(a: Seq, is: Simd<I, K>) -> Simd<T, K>
+    where
+        LaneCount<K>: SupportedLaneCount,
+    {
+        unsafe {
+            Simd::from_array(array::from_fn(|k| {
+                *(a.as_ptr().offset(is[k] as isize) as *const T)
+            }))
+        }
+    }
+
+    use super::*;
+    use std::array;
+
+    pub fn u32_unsafe_once_ss(a: Seq, b: Seq, is: Simd<I, 8>, js: Simd<I, 8>) -> Simd<I, 8> {
+        let a = index::<u32, 8>(a, is);
+        let b = index::<u32, 8>(b, js);
+        let cmp = a ^ b;
+        Simd::from(array::from_fn(|k| {
+            cmp[k].leading_zeros() as I / u8::BITS as I
+        }))
+    }
+
+    pub fn u16_unsafe_once_ss(a: Seq, b: Seq, is: Simd<I, 16>, js: Simd<I, 16>) -> Simd<I, 16> {
+        let a = index::<u16, 16>(a, is);
+        let b = index::<u16, 16>(b, js);
+        let cmp = a ^ b;
+        Simd::from(array::from_fn(|k| {
+            cmp[k].leading_zeros() as I / u8::BITS as I
+        }))
     }
 }

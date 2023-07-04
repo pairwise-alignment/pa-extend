@@ -511,6 +511,7 @@ dependencies = [
  "editdistancek",
  "pa-generate",
  "pa-types",
+ "rand",
 ]
 
 [[package]]
