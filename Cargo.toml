@@ -1,0 +1,21 @@
+[package]
+name = "pa-extend"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pa-types = { git = "https://github.com/pairwise-alignment/pa-types" }
+#pa-generate = { git = "https://github.com/pairwise-alignment/pa-generate" }
+pa-generate = { path = "../pa-generate" }
+editdistancek = "1.0.2"
+
+
+[dev-dependencies]
+criterion = { version = "0.4.0" }
+
+
+[[bench]]
+name = "bench"
+harness = false
