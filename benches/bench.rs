@@ -13,7 +13,7 @@ use pa_types::{Seq, I};
 
 fn bench(c: &mut Criterion) {
     let len = 3000;
-    for e in [1.0, 0.30, 0.10, 0.03, 0.01] {
+    for e in [1.0, 0.30, 0.10, 0.03, 0.01, 0.003, 0.001] {
         let c = &mut c.benchmark_group(format!("{e:.3}", e = e));
 
         let setup = |i| {
@@ -66,8 +66,9 @@ fn bench(c: &mut Criterion) {
         // test2("s128_nz", s128_unsafe_nz);
         test("s256_xor", s256_unsafe);
         test("s256_eq", s256_unsafe_eq);
+        test("u64_then_s256", u64_then_s256);
         // test2("s256_unsafe_nz", s256_unsafe_nz);
-        test("edk", |a, b| editdistancek::mismatch(a, b) as I);
+        // test("edk", |a, b| editdistancek::mismatch(a, b) as I);
 
         fn testp<const K: usize>(
             c: &mut BenchmarkGroup<'_, WallTime>,
@@ -97,23 +98,11 @@ fn bench(c: &mut Criterion) {
             });
         }
 
-        testp(
-            c,
-            a,
-            b,
-            &indices,
-            "u32_once_ss",
-            parallel::u32_unsafe_once_ss,
-        );
+        testp(c, a, b, &indices, "u32_once", parallel::u32_unsafe_once);
 
-        testp(
-            c,
-            a,
-            b,
-            &indices,
-            "u16_once_ss",
-            parallel::u16_unsafe_once_ss,
-        );
+        testp(c, a, b, &indices, "u16_once", parallel::u16_unsafe_once);
+
+        testp(c, a, b, &indices, "u8_once", parallel::u8_unsafe_once);
     }
 }
 

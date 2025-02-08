@@ -2,7 +2,7 @@
 use std::{
     cmp::min,
     num::{NonZeroU16, NonZeroU32, NonZeroU8},
-    simd::{LaneCount, Simd, SimdPartialEq, SupportedLaneCount, ToBitMask},
+    simd::{u64x8, LaneCount, Simd, SimdPartialEq, SupportedLaneCount, ToBitMask},
 };
 
 use pa_types::{Seq, I};
@@ -111,6 +111,17 @@ pub fn u64_unsafe(a: Seq, b: Seq) -> I {
             return cnt as I + (cmp.leading_zeros() / u8::BITS) as I;
         };
     }
+}
+
+pub fn u64_unsafe_once(a: Seq, b: Seq) -> I {
+    let a = index_u64(a, 0);
+    let b = index_u64(b, 0);
+    let cmp = a ^ b;
+    if cmp == 0 {
+        return 8;
+    } else {
+        return (cmp.leading_zeros() / u8::BITS) as I;
+    };
 }
 
 pub fn u64_unsafe_eq(a: Seq, b: Seq) -> I {
@@ -305,6 +316,14 @@ pub fn s256_unsafe_nz(a: Seq, b: Seq) -> I {
     }
 }
 
+pub fn u64_then_s256(a: Seq, b: Seq) -> I {
+    let cnt = u64_unsafe_once(a, b);
+    if cnt < 8 {
+        return cnt;
+    }
+    return 8 + s256_unsafe_eq(&a[8..], &b[8..]);
+}
+
 pub mod parallel {
     pub type ExtendFnParallel<const K: usize> = fn(Seq, Seq, Simd<I, K>, Simd<I, K>) -> Simd<I, K>;
     fn index<T: std::simd::SimdElement, const K: usize>(a: Seq, is: Simd<I, K>) -> Simd<T, K>
@@ -321,7 +340,8 @@ pub mod parallel {
     use super::*;
     use std::array;
 
-    pub fn u32_unsafe_once_ss(a: Seq, b: Seq, is: Simd<I, 8>, js: Simd<I, 8>) -> Simd<I, 8> {
+    #[inline(never)]
+    pub fn u32_unsafe_once(a: Seq, b: Seq, is: Simd<I, 8>, js: Simd<I, 8>) -> Simd<I, 8> {
         let a = index::<u32, 8>(a, is);
         let b = index::<u32, 8>(b, js);
         let cmp = a ^ b;
@@ -330,9 +350,20 @@ pub mod parallel {
         }))
     }
 
-    pub fn u16_unsafe_once_ss(a: Seq, b: Seq, is: Simd<I, 16>, js: Simd<I, 16>) -> Simd<I, 16> {
+    #[inline(never)]
+    pub fn u16_unsafe_once(a: Seq, b: Seq, is: Simd<I, 16>, js: Simd<I, 16>) -> Simd<I, 16> {
         let a = index::<u16, 16>(a, is);
         let b = index::<u16, 16>(b, js);
+        let cmp = a ^ b;
+        Simd::from(array::from_fn(|k| {
+            cmp[k].leading_zeros() as I / u8::BITS as I
+        }))
+    }
+
+    #[inline(never)]
+    pub fn u8_unsafe_once(a: Seq, b: Seq, is: Simd<I, 32>, js: Simd<I, 32>) -> Simd<I, 32> {
+        let a = index::<u8, 32>(a, is);
+        let b = index::<u8, 32>(b, js);
         let cmp = a ^ b;
         Simd::from(array::from_fn(|k| {
             cmp[k].leading_zeros() as I / u8::BITS as I
